@@ -1,73 +1,79 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Gestão de Contratos</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>OzzBank</title>
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+	<style>
+		:root{--gold:#d4af37;--gold-glow:linear-gradient(90deg,#ffdf80,#d4af37,#ffd24d)}
+		html,body{height:100%;margin:0}
+		body{font-family:'Montserrat',system-ui,Arial;background:#000;color:#fff;display:flex;flex-direction:column}
+		/* Top bar */
+		.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.04)}
+		.brand{display:flex;align-items:center;gap:14px}
+		.ozz{font-family:'Playfair Display',serif;font-size:34px;letter-spacing:1px;color:var(--gold);background:var(--gold-glow);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 12px rgba(212,175,55,0.55);position:relative;overflow:hidden}
+		.ozz::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,0.0) 0%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.0) 100%);transform:translateX(-120%);animation:shimmer 3.5s infinite}
+		@keyframes shimmer{0%{transform:translateX(-120%)}50%{transform:translateX(30%)}100%{transform:translateX(120%)}}
+		.nav{display:flex;gap:18px;align-items:center}
+		.nav-item{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,0.75);font-size:14px;text-decoration:none;opacity:0.95;padding:6px 8px;border-radius:6px}
+		.nav-item:hover{background:rgba(255,255,255,0.02);color:#fff}
+		.nav-item svg{width:18px;height:18px;fill:rgba(255,255,255,0.6)}
+		/* Hero */
+		.hero{flex:1;display:flex;align-items:center;justify-content:center;padding:48px}
+		.hero-card{max-width:1100px;width:100%;display:flex;gap:32px;align-items:center}
+		.hero-left{flex:1}
+		.headline{font-family:'Playfair Display',serif;font-size:54px;line-height:1.02;margin:0;background:var(--gold-glow);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 6px 30px rgba(212,175,55,0.25)}
+		.sub{color:rgba(255,255,255,0.8);font-size:18px;margin-top:12px;margin-bottom:22px}
+		.cta-row{display:flex;gap:14px}
+		.cta{padding:12px 18px;border-radius:10px;font-weight:700;text-decoration:none}
+		.cta.primary{background:var(--gold);color:#000}
+		.cta.secondary{background:transparent;border:1px solid rgba(255,255,255,0.08);color:#fff}
+		/* Right panel */
+		.hero-right{width:360px;padding:22px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+		.panel-title{font-weight:700;color:var(--gold);margin-bottom:10px}
+		.panel p{color:rgba(255,255,255,0.85);font-size:14px}
+		/* Footer */
+		.footer{padding:18px 20px;border-top:1px solid rgba(255,255,255,0.04);text-align:center;color:rgba(255,255,255,0.5);font-size:13px}
+		@media (max-width:900px){.hero-card{flex-direction:column}.hero-right{width:100%}}
+	</style>
 </head>
-<body class="bg-blue-50 p-10 relative">
-    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
-        <svg xmlns="http://www.w3.org/2000/svg" width="420" height="420" viewBox="0 0 64 64" fill="none" style="opacity:0.06; transform: rotate(-15deg);">
-            <rect x="6" y="10" width="40" height="36" rx="2" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
-            <path d="M12 16h32" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-            <path d="M12 22h28" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-            <path d="M12 28h28" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-            <path d="M42 34c0 0 6 2 8 6 1.2 2.4.8 4-1 5-1.8 1-6 1-8-1-2-2-6-6-6-6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" />
-            <path d="M44 36c2-1 6-2 8 2" stroke="#1e40af" stroke-width="1.8" stroke-linecap="round" />
-            <path d="M46 38c-2 2-6 4-9 4" stroke="#1e40af" stroke-width="1.8" stroke-linecap="round" />
-            <path d="M34 40c4 2 6 4 10 4" stroke="#1e40af" stroke-width="1.6" stroke-linecap="round" />
-            <path d="M50 44c1 1 1 2 0 3-1 1-3 1-4 0s-1-2 0-3c1-1 3-1 4 0z" fill="#1e40af" />
-            <path d="M48 46l6-8" stroke="#0f172a" stroke-width="1.2" stroke-linecap="round" />
-            <circle cx="54" cy="42" r="1.5" fill="#0f172a" />
-        </svg>
-    </div>
+<body>
+	<header class="topbar">
+		<div class="brand">
+			<div class="ozz">OzzBank</div>
+		</div>
+		<nav class="nav" aria-label="Main navigation">
+			<a class="nav-item" href="/pf"><svg viewBox="0 0 24 24" aria-hidden><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-3.31 0-10 1.67-10 5v3h20v-3c0-3.33-6.69-5-10-5z"/></svg>Pessoa Física</a>
+			<a class="nav-item" href="/pj"><svg viewBox="0 0 24 24" aria-hidden><path d="M3 13h18v8H3zM7 3h10v6H7z"/></svg>Pessoa Jurídica</a>
+			<a class="nav-item" href="/governo"><svg viewBox="0 0 24 24" aria-hidden><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>Governos</a>
+			<a class="nav-item" href="/agro"><svg viewBox="0 0 24 24" aria-hidden><path d="M12 2C8 2 2 4 2 10c0 4 3 6 4 8 1 2 1 4 6 4s5-2 6-4c1-2 4-4 4-8 0-6-6-8-10-8z"/></svg>Agro</a>
+			<a class="nav-item" href="/sobre"><svg viewBox="0 0 24 24" aria-hidden><path d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"/></svg>Sobre Nós</a>
+			<a class="nav-item" href="/carreiras"><svg viewBox="0 0 24 24" aria-hidden><path d="M12 2l4 8h8l-6.5 4 2.5 9L12 18l-8 5 2.5-9L0 10h8z"/></svg>Venha Trabalhar</a>
+		</nav>
+	</header>
 
-    <header class="max-w-3xl mx-auto mb-8 text-center relative z-10">
-        <div class="inline-flex items-center justify-center gap-4">
-            <!-- Ícone: mão assinando contrato -->
-            <svg xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 64 64" fill="none" class="text-blue-600">
-                <rect x="6" y="10" width="40" height="36" rx="2" fill="#ffffff" stroke="#cbd5e1" stroke-width="2" />
-                <path d="M12 16h32" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-                <path d="M12 22h28" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-                <path d="M12 28h28" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" />
-                <path d="M42 34c0 0 6 2 8 6 1.2 2.4.8 4-1 5-1.8 1-6 1-8-1-2-2-6-6-6-6" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" />
-                <path d="M44 36c2-1 6-2 8 2" stroke="#1e40af" stroke-width="1.8" stroke-linecap="round" />
-                <path d="M46 38c-2 2-6 4-9 4" stroke="#1e40af" stroke-width="1.8" stroke-linecap="round" />
-                <path d="M34 40c4 2 6 4 10 4" stroke="#1e40af" stroke-width="1.6" stroke-linecap="round" />
-                <path d="M50 44c1 1 1 2 0 3-1 1-3 1-4 0s-1-2 0-3c1-1 3-1 4 0z" fill="#1e40af" />
-                <path d="M48 46l6-8" stroke="#0f172a" stroke-width="1.2" stroke-linecap="round" />
-                <circle cx="54" cy="42" r="1.5" fill="#0f172a" />
-            </svg>
+	<main class="hero">
+		<div class="hero-card">
+			<div class="hero-left">
+				<h1 class="headline">Abra sua conta no OzzBank — o futuro das suas finanças em ouro.</h1>
+				<p class="sub">Abra conta, faça contratos com o banco e invista com segurança e performance. Simples, rápido e com atendimento humano.</p>
+				<div class="cta-row">
+					<a class="cta primary" href="/incluir">Abra sua Conta</a>
+					<a class="cta secondary" href="/consultar">Contratos e Investimentos</a>
+				</div>
+			</div>
+			<aside class="hero-right">
+				<div class="panel">
+					<div class="panel-title">Por que OzzBank?</div>
+					<p>Atendimento dedicado, soluções de investimento e contratos flexíveis pensados para você. Em breve teremos soluções completas para pessoas físicas, jurídicas e agro.</p>
+				</div>
+			</aside>
+		</div>
+	</main>
 
-            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-900">Gestão de Contratos</h1>
-        </div>
-        <p class="mt-3 text-gray-600">Painel para cadastro e controle de contratos</p>
-    </header>
-
-    <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md relative z-10">
-        <h2 class="text-2xl font-semibold mb-6 text-gray-800">Novo Contrato Bancário</h2>
-        
-        <form action="/incluir" method="POST" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Número do Contrato</label>
-                <input type="text" name="numero" required class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Nome do Cliente</label>
-                <input type="text" name="cliente" required class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Valor (R$)</label>
-                <input type="number" step="0.01" name="valor" required class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700">Data de Assinatura</label>
-                <input type="date" name="data" required class="mt-1 block w-full border border-gray-300 rounded-md p-2">
-            </div>
-            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition">
-                Cadastrar Contrato
-            </button>
-        </form>
-    </div>
+	<footer class="footer">© OzzBank — Todos os direitos reservados</footer>
 </body>
 </html>

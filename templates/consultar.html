@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>OzzBank — Consultar Contratos</title>
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+	<style>
+		:root{--gold:#d4af37;--gold-glow:linear-gradient(90deg,#ffdf80,#d4af37,#ffd24d)}
+		html,body{height:100%;margin:0}
+		body{font-family:'Montserrat',system-ui,Arial;background:#000;color:#fff;display:flex;flex-direction:column}
+		.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.04)}
+		.ozz{font-family:'Playfair Display',serif;font-size:28px;background:var(--gold-glow);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 10px rgba(212,175,55,0.5)}
+		.nav-link{display:inline-block;margin-left:20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:14px}
+		.nav-link:hover{color:#fff}
+		main{flex:1;max-width:1100px;margin:40px auto;padding:0 20px;width:100%}
+		.container{padding:28px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+		h1{font-family:'Playfair Display',serif;font-size:32px;margin:0 0 24px 0;background:var(--gold-glow);-webkit-background-clip:text;background-clip:text;color:transparent}
+		label{display:block;color:rgba(255,255,255,0.85);font-weight:600;margin-bottom:6px;font-size:14px}
+		input,select{width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#fff;font-family:inherit;box-sizing:border-box;margin-bottom:12px}
+		input::placeholder{color:rgba(255,255,255,0.4)}
+		input:focus,select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 6px rgba(212,175,55,0.2)}
+		.search-form{display:grid;grid-template-columns:1fr auto;gap:16px;margin-bottom:24px;align-items:end}
+		.search-form>div:last-child{grid-column:1/-1;text-align:right}
+		.btn{display:inline-block;padding:11px 18px;border-radius:8px;font-weight:700;text-decoration:none;border:none;cursor:pointer;font-size:14px}
+		.btn.primary{background:var(--gold);color:#000}
+		.btn.primary:hover{background:#ffd24d;transform:translateY(-1px)}
+		.btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.9);margin-left:10px}
+		.btn.secondary:hover{border-color:var(--gold);color:#fff}
+		table{width:100%;border-collapse:collapse;margin-top:20px}
+		th,td{padding:12px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left;font-size:14px}
+		th{color:var(--gold);font-weight:700;background:rgba(255,255,255,0.01)}
+		tr:hover{background:rgba(255,255,255,0.01)}
+		.actions{white-space:nowrap}
+		.actions a, .actions button{display:inline-block;padding:6px 10px;margin-right:8px;font-size:12px;border-radius:4px;border:none;cursor:pointer;background:none}
+		.edit-link{color:rgba(212,175,55,0.8);text-decoration:none}
+		.edit-link:hover{color:var(--gold)}
+		.delete-btn{color:rgba(239,68,68,0.8)}
+		.delete-btn:hover{color:#ff6b6b}
+		.no-results{color:rgba(255,255,255,0.6);padding:20px;text-align:center;font-size:14px}
+		.flash{margin-bottom:16px;padding:12px;border-radius:8px;font-size:14px}
+		.flash.success{background:rgba(34,197,94,0.12);color:#16a34a;border-left:3px solid #16a34a}
+		.flash.error{background:rgba(239,68,68,0.08);color:#b91c1c;border-left:3px solid #b91c1c}
+		@media(max-width:768px){.search-form{grid-template-columns:1fr;.search-form>div:last-child{grid-column:1}}
+	</style>
+</head>
+<body>
+	<header class="topbar">
+		<div class="ozz">OzzBank</div>
+		<a href="/" class="nav-link">← Voltar</a>
+	</header>
+
+	<main>
+		<div class="container">
+			{% with messages = get_flashed_messages(with_categories=true) %}
+			{% if messages %}
+				{% for category,msg in messages %}
+					<div class="flash {{ category }}">{{ msg }}</div>
+				{% endfor %}
+			{% endif %}
+			{% endwith %}
+
+			<h1>Consulta de Contratos</h1>
+
+			<form action="/consultar" method="get" class="search-form">
+				<div>
+					<label>Buscar por</label>
+					<input type="text" name="q" value="{{ request.args.get('q','') }}" placeholder="Digite nome, CPF ou número do contrato">
+				</div>
+				<div>
+					<label>Campo</label>
+					<select name="by">
+						<option value="auto" {% if request.args.get('by','auto') == 'auto' %}selected{% endif %}>Auto (nome/cpf/número)</option>
+						<option value="nome" {% if request.args.get('by') == 'nome' %}selected{% endif %}>Nome</option>
+						<option value="cpf" {% if request.args.get('by') == 'cpf' %}selected{% endif %}>CPF</option>
+						<option value="numero" {% if request.args.get('by') == 'numero' %}selected{% endif %}>Número</option>
+					</select>
+				</div>
+				<div>
+					<button type="submit" class="btn primary">Pesquisar</button>
+					<a href="/incluir" class="btn secondary">+ Novo Contrato</a>
+				</div>
+			</form>
+
+			<div id="results">
+				{% if contratos is defined and contratos|length > 0 %}
+					<table>
+						<thead>
+							<tr>
+								<th>Cliente</th>
+								<th>CPF</th>
+								<th>Número</th>
+								<th>Valor</th>
+								<th>Data</th>
+								<th>Ações</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for c in contratos %}
+							<tr>
+								<td>{{ c.cliente or c.nome or '-' }}</td>
+								<td>{{ c.cpf or c.cliente_cpf or '-' }}</td>
+								<td>{{ c.numero }}</td>
+								<td>R$ {{ "%.2f"|format(c.valor) if c.valor else '-' }}</td>
+								<td>{{ c.data or '-' }}</td>
+								<td class="actions">
+									<a class="edit-link" href="/editar/{{ c.id }}">Editar</a>
+									<form action="/excluir/{{ c.id }}" method="post" style="display:inline" onclick="return confirm('Tem certeza que deseja excluir este contrato?')">
+										<button type="submit" class="delete-btn">Excluir</button>
+									</form>
+								</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				{% elif request.args.get('q') %}
+					<div class="no-results">Nenhum contrato encontrado para sua busca.</div>
+				{% else %}
+					<div class="no-results">Use o campo acima para buscar contratos por nome, CPF ou número.</div>
+				{% endif %}
+			</div>
+		</div>
+	</main>
+</body>
+</html>
