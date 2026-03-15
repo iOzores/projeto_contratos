@@ -1,9 +1,0 @@
-CREATE TABLE contratos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    numero_contrato TEXT NOT NULL,
-    cliente_nome TEXT NOT NULL,
-    cliente_cpf TEXT NOT NULL,
-    valor_contrato REAL NOT NULL,
-    taxa_juros DECIMAL NOT NULL,
-    data_assinatura DATE NOT NULL,
-);

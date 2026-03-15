@@ -41,7 +41,10 @@
 		.flash{margin-bottom:16px;padding:12px;border-radius:8px;font-size:14px}
 		.flash.success{background:rgba(34,197,94,0.12);color:#16a34a;border-left:3px solid #16a34a}
 		.flash.error{background:rgba(239,68,68,0.08);color:#b91c1c;border-left:3px solid #b91c1c}
-		@media(max-width:768px){.search-form{grid-template-columns:1fr;.search-form>div:last-child{grid-column:1}}
+		@media(max-width:768px){
+			.search-form{grid-template-columns:1fr}
+			.search-form>div:last-child{grid-column:1}
+		}
 	</style>
 </head>
 <body>
@@ -99,10 +102,10 @@
 							{% for c in contratos %}
 							<tr>
 								<td>{{ c.cliente or c.nome or '-' }}</td>
-								<td>{{ c.cpf or c.cliente_cpf or '-' }}</td>
+								<td>{{ (c.cpf or c.cliente_cpf or '-')|cpf }}</td>
 								<td>{{ c.numero }}</td>
-								<td>R$ {{ "%.2f"|format(c.valor) if c.valor else '-' }}</td>
-								<td>{{ c.data or '-' }}</td>
+								<td>{{ (c.valor if c.valor is not none else '-')|currency }}</td>
+								<td>{{ (c.data or '-')|date_br }}</td>
 								<td class="actions">
 									<a class="edit-link" href="/editar/{{ c.id }}">Editar</a>
 									<form action="/excluir/{{ c.id }}" method="post" style="display:inline" onclick="return confirm('Tem certeza que deseja excluir este contrato?')">
