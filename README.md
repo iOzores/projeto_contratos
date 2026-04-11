@@ -1,0 +1,1 @@
+Software de acompanhamento de contratos de um banco fictício chamado OzzBank com o objetivo de fazer o cadastramento de contratos e pesquisar contratos de clientes com a possibilidade de edição de dados e exclusão desses contratos na base de dados.
