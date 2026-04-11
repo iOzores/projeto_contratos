@@ -39,7 +39,21 @@ class ContratoDB:
             raise ValueError("Nome de tabela inválido")
         self.table_name = table_name
         self.connection_info = self._build_connection_info(db_path)
-        self.conn = pg.connect(**self.connection_info)
+        try:
+            self.conn = pg.connect(**self.connection_info)
+        except pg.DatabaseError as e:
+            err_text = str(e)
+            if "28P01" in err_text:
+                raise RuntimeError(
+                    "Falha de autenticacao no PostgreSQL (codigo 28P01). "
+                    "Verifique usuario/senha e ajuste as variaveis PGHOST, PGPORT, "
+                    "PGDATABASE, PGUSER e PGPASSWORD (ou DATABASE_URL). "
+                    f"Conexao atual: host={self.connection_info.get('host')} "
+                    f"port={self.connection_info.get('port')} "
+                    f"database={self.connection_info.get('database')} "
+                    f"user={self.connection_info.get('user')}"
+                ) from e
+            raise
         self._create_table()
 
     @staticmethod

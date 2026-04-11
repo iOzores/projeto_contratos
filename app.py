@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, render_template, request, redirect, url_for, flash
 from db import ContratoDB
 from Classes import (
@@ -60,8 +63,8 @@ def incluir_contrato():
 def consultar_contratos():
     # Página separada para consulta da base `contratos_bancarios`
     q = request.args.get('q', '')
-    by = request.args.get('by', 'auto')
-    contratos = consultar_service.consultar(q, by=by)
+    # Sempre usar "auto" - detecção automática por nome, CPF ou número
+    contratos = consultar_service.consultar(q, by='auto')
     return render_template('consultar.html', contratos=contratos)
 
 
@@ -104,4 +107,4 @@ def editar_contrato(contrato_id: int):
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)
