@@ -86,6 +86,8 @@
 								<th>Cliente</th>
 								<th>CPF</th>
 								<th>Número</th>
+								<th>Taxa Juros</th>
+								<th>Data Nasc.</th>
 								<th>Valor</th>
 								<th>Data</th>
 								<th>Ações</th>
@@ -97,11 +99,14 @@
 								<td>{{ c.cliente or c.nome or '-' }}</td>
 								<td>{{ (c.cpf or c.cliente_cpf or '-')|cpf }}</td>
 								<td>{{ c.numero }}</td>
+								<td>{{ (c.taxa_juros if c.taxa_juros is not none else 0)|decimal_br }}%</td>
+								<td>{{ (c.data_nascimento or '-')|date_br }}</td>
 								<td>{{ (c.valor if c.valor is not none else '-')|currency }}</td>
 								<td>{{ (c.data or '-')|date_br }}</td>
 								<td class="actions">
 									<a class="edit-link" href="/editar/{{ c.id }}">Editar</a>
-									<form action="/excluir/{{ c.id }}" method="post" style="display:inline" onclick="return confirm('Tem certeza que deseja excluir este contrato?')">
+									<form action="/excluir/{{ c.id }}" method="post" style="display:inline" onsubmit="return confirm('Tem certeza que deseja excluir este contrato?')">
+										<input type="hidden" name="q" value="{{ request.args.get('q','') }}">
 										<button type="submit" class="delete-btn">Excluir</button>
 									</form>
 								</td>

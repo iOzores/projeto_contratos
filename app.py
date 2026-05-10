@@ -1,5 +1,5 @@
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(override=True)
 
 from flask import Flask, render_template, request, redirect, url_for, flash
 from db import ContratoDB
@@ -39,10 +39,12 @@ def incluir_contrato():
     cliente = (request.form.get('cliente') or '').strip()
     cpf = (request.form.get('cpf') or '').strip()
     valor = (request.form.get('valor') or '').strip()
+    taxa_juros = (request.form.get('taxa_juros') or '').strip()
+    data_nascimento = (request.form.get('data_nascimento') or '').strip()
     data = (request.form.get('data') or '').strip()
     numero_form = (request.form.get('numero') or '').strip()
 
-    errors, payload = incluir_service.validar_entrada(cliente, cpf, valor, data)
+    errors, payload = incluir_service.validar_entrada(cliente, cpf, valor, data, taxa_juros=taxa_juros, data_nascimento=data_nascimento)
 
     if errors:
         for e in errors:
@@ -63,36 +65,53 @@ def incluir_contrato():
 def consultar_contratos():
     # Página separada para consulta da base `contratos_bancarios`
     q = request.args.get('q', '')
-    # Sempre usar "auto" - detecção automática por nome, CPF ou número
     contratos = consultar_service.consultar(q, by='auto')
     return render_template('consultar.html', contratos=contratos)
 
 
 @app.route('/excluir/<int:contrato_id>', methods=['POST'])
 def excluir_contrato(contrato_id: int):
+    q = (request.form.get('q') or '').strip()
     try:
-        excluir_service.excluir(contrato_id)
+        deleted = excluir_service.excluir(contrato_id)
+        if deleted:
+            flash('Contrato excluído com sucesso.', 'success')
+        else:
+            flash('Contrato não encontrado para exclusão.', 'error')
     except Exception as e:
         traceback.print_exc()
         flash('Erro ao excluir contrato: ' + str(e), 'error')
-    return redirect(url_for('index'))
+    return redirect(url_for('consultar_contratos', q=q))
 
 
-@app.route('/editar/<int:contrato_id>', methods=['POST'])
+@app.route('/editar/<int:contrato_id>', methods=['GET', 'POST'])
 def editar_contrato(contrato_id: int):
-    numero = request.form.get('numero')
-    cliente = request.form.get('cliente')
-    cpf = request.form.get('cpf')
-    valor = request.form.get('valor')
-    data = request.form.get('data')
+    contrato = db.get_by_id(contrato_id)
+    if contrato is None:
+        flash('Contrato não encontrado.', 'error')
+        return redirect(url_for('consultar_contratos'))
 
-    updates, err_msg = editar_service.preparar_updates(numero, cliente, cpf, valor, data)
+    if request.method == 'GET':
+        return render_template('editar.html', contrato=contrato)
+
+    cliente = (request.form.get('cliente') or '').strip()
+    cpf = (request.form.get('cpf') or '').strip()
+    valor = (request.form.get('valor') or '').strip()
+    taxa_juros = (request.form.get('taxa_juros') or '').strip()
+    data_nascimento = (request.form.get('data_nascimento') or '').strip()
+    data = (request.form.get('data') or '').strip()
+
+    if not cliente or not cpf or not valor or not data:
+        flash('Preencha todos os campos obrigatórios.', 'error')
+        return render_template('editar.html', contrato=contrato)
+
+    updates, err_msg = editar_service.preparar_updates(None, cliente, cpf, valor, data, taxa_juros=taxa_juros, data_nascimento=data_nascimento)
     if err_msg:
         flash(err_msg, 'error')
-        return redirect(url_for('index'))
+        return render_template('editar.html', contrato=contrato)
     if updates is None:
         flash('Dados de edição inválidos', 'error')
-        return redirect(url_for('index'))
+        return render_template('editar.html', contrato=contrato)
 
     ok, err = editar_service.editar(contrato_id, updates)
     if not ok:
@@ -101,9 +120,10 @@ def editar_contrato(contrato_id: int):
         else:
             traceback.print_exc()
             flash('Erro ao editar contrato: ' + str(err), 'error')
-        return redirect(url_for('index'))
+        return render_template('editar.html', contrato=contrato)
 
-    return redirect(url_for('index'))
+    flash('Contrato atualizado com sucesso.', 'success')
+    return redirect(url_for('consultar_contratos'))
 
 
 if __name__ == '__main__':

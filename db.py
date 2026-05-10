@@ -14,6 +14,8 @@ class Contrato:
     cliente: str
     cliente_cpf: str
     valor: float
+    taxa_juros: float
+    data_nascimento: str
     data: str
 
 
@@ -55,6 +57,8 @@ class ContratoDB:
                 ) from e
             raise
         self._create_table()
+        # ensure new columns exist when upgrading schema
+        self._ensure_columns()
 
     @staticmethod
     def _parse_url(url: str) -> Dict[str, Any]:
@@ -73,15 +77,25 @@ class ContratoDB:
         if db_path and db_path.startswith(("postgres://", "postgresql://")):
             return self._parse_url(db_path)
 
-        database_url = os.getenv("DATABASE_URL")
-        if database_url:
-            return self._parse_url(database_url)
-
         host = os.getenv("PGHOST", "localhost")
         port = os.getenv("PGPORT", "5432")
         dbname = os.getenv("PGDATABASE", "projeto_contratos")
         user = os.getenv("PGUSER", "postgres")
         password = os.getenv("PGPASSWORD", "postgres")
+
+        if any([host, port, dbname, user, password]):
+            return {
+                "host": host,
+                "port": int(port),
+                "database": dbname,
+                "user": user,
+                "password": password,
+            }
+
+        database_url = os.getenv("DATABASE_URL")
+        if database_url:
+            return self._parse_url(database_url)
+
         return {
             "host": host,
             "port": int(port),
@@ -102,10 +116,22 @@ class ContratoDB:
                     cliente_cpf TEXT NOT NULL,
                     valor DOUBLE PRECISION NOT NULL,
                     data DATE NOT NULL,
+                    taxa_juros DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+                    data_nascimento DATE NULL,
                     CHECK (numero ~ '^(\\d{{7,}}|\\d{{5,}}-\\d{{2}})$')
                 );
                 """
             )
+        finally:
+            cur.close()
+        self.conn.commit()
+
+    def _ensure_columns(self) -> None:
+        cur = self.conn.cursor()
+        try:
+            # safe alter: add columns if not exists (Postgres supports IF NOT EXISTS)
+            cur.execute(f"ALTER TABLE {self.table_name} ADD COLUMN IF NOT EXISTS taxa_juros DOUBLE PRECISION NOT NULL DEFAULT 0.0;")
+            cur.execute(f"ALTER TABLE {self.table_name} ADD COLUMN IF NOT EXISTS data_nascimento DATE NULL;")
         finally:
             cur.close()
         self.conn.commit()
@@ -119,6 +145,8 @@ class ContratoDB:
             cliente=str(row.get("cliente", "")),
             cliente_cpf=str(row.get("cliente_cpf", "")),
             valor=float(row.get("valor", 0.0)),
+            taxa_juros=float(row.get("taxa_juros", 0.0)),
+            data_nascimento=str(row.get("data_nascimento", "")),
             data=str(row.get("data", "")),
         )
 
@@ -127,7 +155,7 @@ class ContratoDB:
         try:
             cur.execute(
                 f"""
-                SELECT id, numero, cliente, cliente_cpf, valor, TO_CHAR(data, 'YYYY-MM-DD') AS data
+                SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data
                 FROM {self.table_name}
                 ORDER BY id DESC
                 """
@@ -143,11 +171,45 @@ class ContratoDB:
                     "cliente": row[2],
                     "cliente_cpf": row[3],
                     "valor": row[4],
-                    "data": row[5],
+                    "taxa_juros": row[5],
+                    "data_nascimento": row[6],
+                    "data": row[7],
                 }
             )
             for row in rows
         ]
+
+    def get_by_id(self, contrato_id: int) -> Optional[Contrato]:
+        cur = self.conn.cursor()
+        try:
+            cur.execute(
+                f"""
+                SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data
+                FROM {self.table_name}
+                WHERE id = %s
+                LIMIT 1
+                """,
+                (contrato_id,),
+            )
+            row = cur.fetchone()
+        finally:
+            cur.close()
+
+        if row is None:
+            return None
+
+        return self._to_contrato(
+            {
+                "id": row[0],
+                "numero": row[1],
+                "cliente": row[2],
+                "cliente_cpf": row[3],
+                "valor": row[4],
+                "taxa_juros": row[5],
+                "data_nascimento": row[6],
+                "data": row[7],
+            }
+        )
 
     def exists_numero(self, numero: str) -> bool:
         cur = self.conn.cursor()
@@ -211,7 +273,7 @@ class ContratoDB:
         try:
             final_query = (
                 f"""
-                    SELECT id, numero, cliente, cliente_cpf, valor, TO_CHAR(data, 'YYYY-MM-DD') AS data
+                    SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data
                     FROM {self.table_name}
                     WHERE {where_clause}
                     ORDER BY id DESC
@@ -229,7 +291,9 @@ class ContratoDB:
                     "cliente": row[2],
                     "cliente_cpf": row[3],
                     "valor": row[4],
-                    "data": row[5],
+                    "taxa_juros": row[5],
+                    "data_nascimento": row[6],
+                    "data": row[7],
                 }
             )
             for row in rows
@@ -242,8 +306,8 @@ class ContratoDB:
         try:
             cur.execute(
                 f"""
-                INSERT INTO {self.table_name} (numero, cliente, cliente_cpf, valor, data)
-                VALUES (%s, %s, %s, %s, %s)
+                INSERT INTO {self.table_name} (numero, cliente, cliente_cpf, valor, taxa_juros, data_nascimento, data)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """,
                 (
@@ -251,6 +315,8 @@ class ContratoDB:
                     contrato.cliente,
                     contrato.cliente_cpf,
                     float(contrato.valor),
+                    float(getattr(contrato, 'taxa_juros', 0.0)),
+                    getattr(contrato, 'data_nascimento', None),
                     contrato.data,
                 ),
             )
@@ -272,7 +338,7 @@ class ContratoDB:
     def update(self, contrato_id: int, **fields: Any) -> bool:
         if not fields:
             return False
-        allowed = {"numero", "cliente", "cliente_cpf", "valor", "data"}
+        allowed = {"numero", "cliente", "cliente_cpf", "valor", "data", "taxa_juros", "data_nascimento"}
         updates: Dict[str, Any] = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return False

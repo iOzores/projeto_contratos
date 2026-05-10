@@ -14,7 +14,7 @@ class IncluirContratoService:
         except Exception:
             return ""
 
-    def validar_entrada(self, cliente: str, cpf: str, valor: str, data: str):
+    def validar_entrada(self, cliente: str, cpf: str, valor: str, data: str, taxa_juros: str = None, data_nascimento: str = None):
         errors = []
 
         try:
@@ -36,11 +36,24 @@ class IncluirContratoService:
         if data_limpa == "":
             errors.append("Data de assinatura é obrigatória")
 
+        taxa_f = 0.0
+        if taxa_juros is not None and (str(taxa_juros).strip() != ""):
+            try:
+                taxa_f = parse_money_br(taxa_juros)
+            except Exception:
+                errors.append("Taxa de juros inválida")
+
+        data_nasc_val = None
+        if data_nascimento is not None and (str(data_nascimento).strip() != ""):
+            data_nasc_val = data_nascimento.strip()
+
         payload = {
             "cliente": cliente_limpo,
             "cliente_cpf": cpf_digits,
             "valor": valor_f,
             "data": data_limpa,
+            "taxa_juros": taxa_f,
+            "data_nascimento": data_nasc_val,
         }
         return errors, payload
 
@@ -69,6 +82,8 @@ class IncluirContratoService:
                 cliente=payload["cliente"],
                 cliente_cpf=payload["cliente_cpf"],
                 valor=payload["valor"] or 0.0,
+                taxa_juros=payload.get("taxa_juros", 0.0) or 0.0,
+                data_nascimento=payload.get("data_nascimento"),
                 data=payload["data"],
             )
 

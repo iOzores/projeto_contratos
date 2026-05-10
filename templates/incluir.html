@@ -64,9 +64,20 @@
                     <input type="text" id="valor" name="valor" required placeholder="R$ 0,00" inputmode="decimal" autocomplete="off">
                 </div>
 
+                <div style="margin-bottom:12px">
+                    <label>Taxa de Juros (%)</label>
+                    <input type="text" id="taxa" name="taxa_juros" placeholder="0,00" inputmode="decimal" autocomplete="off">
+                    <div class="hint">Informe a taxa em percentual (ex.: 1,50)</div>
+                </div>
+
                 <div style="margin-bottom:16px">
                     <label>Data de Assinatura</label>
                     <input type="date" name="data" required>
+                </div>
+
+                <div style="margin-bottom:16px">
+                    <label>Data de Nascimento</label>
+                    <input type="date" name="data_nascimento">
                 </div>
 
                 <div style="text-align:right;display:flex;gap:10px;justify-content:flex-end;align-items:center">
@@ -96,6 +107,20 @@
                 const parts = cents.split('.');
                 parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
                 return 'R$ ' + parts[0] + ',' + parts[1];
+            }
+
+            function maskDecimalBR(value) {
+                const s = value.replace(/[^0-9,\.]/g, '');
+                // normalize commas/dots to comma as decimal separator for display
+                const cleaned = s.replace(/\./g, ',');
+                return cleaned;
+            }
+
+            const taxaInput = document.getElementById('taxa');
+            if (taxaInput) {
+                taxaInput.addEventListener('input', function () {
+                    taxaInput.value = maskDecimalBR(taxaInput.value);
+                });
             }
 
             if (cpfInput) {
