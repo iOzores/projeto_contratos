@@ -1,5 +1,10 @@
 from dotenv import load_dotenv
-load_dotenv(override=True)
+import os
+from pathlib import Path
+
+# Carregar .env do diretório do projeto
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path, override=True)
 
 from flask import Flask, render_template, request, redirect, url_for, flash
 from db import ContratoDB

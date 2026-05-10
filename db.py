@@ -3,6 +3,13 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 from urllib.parse import urlparse, unquote
+from pathlib import Path
+
+# Carregar .env se houver no diretório do arquivo
+_env_path = Path(__file__).parent / '.env'
+if _env_path.exists():
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=_env_path, override=True)
 
 from pg8000 import dbapi as pg
 
@@ -41,6 +48,9 @@ class ContratoDB:
             raise ValueError("Nome de tabela inválido")
         self.table_name = table_name
         self.connection_info = self._build_connection_info(db_path)
+        # DEBUG
+        import sys
+        print(f"DEBUG: connection_info = {self.connection_info}", file=sys.stderr)
         try:
             self.conn = pg.connect(**self.connection_info)
         except pg.DatabaseError as e:
