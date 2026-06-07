@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>OzzBank - Simular Empr&eacute;stimo</title>
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+	<style>
+		:root{--gold:#d4af37;--gold-glow:linear-gradient(90deg,#ffdf80,#d4af37,#ffd24d)}
+		html,body{height:100%;margin:0}
+		body{font-family:'Montserrat',system-ui,Arial;background:#000;color:#fff;display:flex;flex-direction:column}
+		.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.04)}
+		.ozz{font-family:'Playfair Display',serif;font-size:28px;background:var(--gold-glow);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 10px rgba(212,175,55,0.5)}
+		.nav-link{display:inline-block;margin-left:20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:14px}
+		.nav-link:hover{color:#fff}
+		main{flex:1;max-width:1180px;margin:40px auto;padding:0 20px;width:100%}
+		.container{padding:28px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
+		h1{font-family:'Playfair Display',serif;font-size:32px;margin:0 0 8px 0;background:var(--gold-glow);-webkit-background-clip:text;background-clip:text;color:transparent}
+		.subtitle{color:rgba(255,255,255,0.72);margin-bottom:22px}
+		.form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+		.card{padding:20px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
+		label{display:block;color:rgba(255,255,255,0.85);font-weight:600;margin-bottom:8px;font-size:14px;text-transform:uppercase;letter-spacing:0.5px}
+		input{width:100%;padding:14px;border-radius:8px;border:1.5px solid rgba(212,175,55,0.3);background:rgba(212,175,55,0.08);color:#fff;font-family:inherit;box-sizing:border-box;transition:all 0.3s ease}
+		input::placeholder{color:rgba(255,255,255,0.6);font-style:italic}
+		input:focus{outline:none;border-color:var(--gold);background:rgba(212,175,55,0.12);box-shadow:0 0 10px rgba(212,175,55,0.3)}
+		.btn-row{display:flex;gap:10px;justify-content:flex-end;align-items:center;margin-top:18px}
+		.btn{display:inline-block;padding:11px 18px;border-radius:8px;font-weight:700;text-decoration:none;border:none;cursor:pointer;font-size:14px}
+		.btn.primary{background:var(--gold);color:#000}
+		.btn.primary:hover{background:#ffd24d;transform:translateY(-1px)}
+		.btn.secondary{background:transparent;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.9)}
+		.btn.secondary:hover{border-color:var(--gold);color:#fff}
+		.contract-action{display:flex;justify-content:flex-end;margin-top:16px}
+		.flash{margin-bottom:16px;padding:12px;border-radius:8px;font-size:14px}
+		.flash.success{background:rgba(34,197,94,0.12);color:#16a34a;border-left:3px solid #16a34a}
+		.flash.error{background:rgba(239,68,68,0.08);color:#b91c1c;border-left:3px solid #b91c1c}
+		.results{margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:18px}
+		.result-title{margin:0 0 14px 0;font-family:'Playfair Display',serif;font-size:24px;background:var(--gold-glow);-webkit-background-clip:text;background-clip:text;color:transparent}
+		.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+		.metric{padding:14px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04)}
+		.metric-label{display:block;color:rgba(255,255,255,0.62);font-size:12px;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:6px}
+		.metric-value{font-size:18px;font-weight:700;color:#fff}
+		table{width:100%;border-collapse:collapse}
+		th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left;font-size:13px}
+		th{color:var(--gold);font-weight:700;background:rgba(255,255,255,0.01)}
+		.no-results{color:rgba(255,255,255,0.6);padding:20px;text-align:center;font-size:14px}
+		@media(max-width:980px){.form-grid,.results,.summary{grid-template-columns:1fr}}
+		@media(max-width:768px){main{margin:24px auto}.btn-row{flex-direction:column;align-items:stretch}.btn-row .btn{width:100%;text-align:center}}
+	</style>
+</head>
+<body>
+	<header class="topbar">
+		<div class="ozz">OzzBank</div>
+		<a href="/" class="nav-link">&larr; Voltar</a>
+	</header>
+
+	<main>
+		<div class="container">
+			{% with messages = get_flashed_messages(with_categories=true) %}
+			{% if messages %}
+				{% for category, msg in messages %}
+					<div class="flash {{ category }}">{{ msg }}</div>
+				{% endfor %}
+			{% endif %}
+			{% endwith %}
+
+			<h1>Simular Empr&eacute;stimo</h1>
+			<div class="subtitle">Informe o valor do empr&eacute;stimo, a taxa de juros e o prazo contratado. O resultado aparece logo abaixo para SAC e Price.</div>
+
+			<section class="card">
+				<form action="/simular" method="POST">
+					<div class="form-grid">
+						<div>
+							<label>Valor do Empr&eacute;stimo</label>
+							<input type="text" id="valor" name="valor" value="{{ valor_form }}" placeholder="R$ 0,00" inputmode="decimal" autocomplete="off" required>
+						</div>
+						<div>
+							<label>Taxa de Juros (%)</label>
+							<input type="text" id="taxa_juros" name="taxa_juros" value="{{ taxa_juros_form }}" placeholder="0,00" inputmode="decimal" autocomplete="off" required>
+						</div>
+						<div>
+							<label>Prazo Contratado (meses)</label>
+							<input type="number" name="meses" min="1" step="1" value="{{ meses_form }}" required>
+						</div>
+					</div>
+					<div class="btn-row">
+						<a href="/" class="btn secondary">Cancelar</a>
+						<button type="submit" class="btn primary">Simular Empr&eacute;stimo</button>
+					</div>
+				</form>
+			</section>
+
+			{% if simulacao_realizada %}
+			<div class="results">
+				<section class="card">
+					<h2 class="result-title">Sistema SAC</h2>
+					<div class="summary">
+						<div class="metric"><span class="metric-label">Total Pago</span><span class="metric-value">{{ sac_resumo.total_pago|currency }}</span></div>
+						<div class="metric"><span class="metric-label">Total de Juros</span><span class="metric-value">{{ sac_resumo.total_juros|currency }}</span></div>
+						<div class="metric"><span class="metric-label">Parcelas</span><span class="metric-value">{{ sac_parcelas|length }}</span></div>
+					</div>
+					<table>
+						<thead>
+							<tr>
+								<th>M&ecirc;s</th>
+								<th>Presta&ccedil;&atilde;o</th>
+								<th>Amortiza&ccedil;&atilde;o</th>
+								<th>Juros</th>
+								<th>Saldo Devedor</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for parcela in sac_parcelas %}
+							<tr>
+								<td>{{ parcela.mes }}</td>
+								<td>{{ parcela.prestacao|currency }}</td>
+								<td>{{ parcela.amortizacao|currency }}</td>
+								<td>{{ parcela.juros|currency }}</td>
+								<td>{{ parcela.saldo_devedor|currency }}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+					<div class="contract-action">
+						<a class="btn primary" href="{{ url_for('incluir_contrato', valor=valor_form, taxa_juros=taxa_juros_form, prazo_meses=meses_form, sistema='SAC') }}">Contratar este empr&eacute;stimo</a>
+					</div>
+				</section>
+
+				<section class="card">
+					<h2 class="result-title">Sistema Price</h2>
+					<div class="summary">
+						<div class="metric"><span class="metric-label">Total Pago</span><span class="metric-value">{{ price_resumo.total_pago|currency }}</span></div>
+						<div class="metric"><span class="metric-label">Total de Juros</span><span class="metric-value">{{ price_resumo.total_juros|currency }}</span></div>
+						<div class="metric"><span class="metric-label">Parcelas</span><span class="metric-value">{{ price_parcelas|length }}</span></div>
+					</div>
+					<table>
+						<thead>
+							<tr>
+								<th>M&ecirc;s</th>
+								<th>Presta&ccedil;&atilde;o</th>
+								<th>Amortiza&ccedil;&atilde;o</th>
+								<th>Juros</th>
+								<th>Saldo Devedor</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for parcela in price_parcelas %}
+							<tr>
+								<td>{{ parcela.mes }}</td>
+								<td>{{ parcela.prestacao|currency }}</td>
+								<td>{{ parcela.amortizacao|currency }}</td>
+								<td>{{ parcela.juros|currency }}</td>
+								<td>{{ parcela.saldo_devedor|currency }}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+					<div class="contract-action">
+						<a class="btn primary" href="{{ url_for('incluir_contrato', valor=valor_form, taxa_juros=taxa_juros_form, prazo_meses=meses_form, sistema='PRICE') }}">Contratar este empr&eacute;stimo</a>
+					</div>
+				</section>
+			</div>
+			{% else %}
+			<div class="card" style="margin-top:22px">
+				<div class="no-results">Preencha os dados acima e clique em Simular Empr&eacute;stimo para ver as duas tabelas.</div>
+			</div>
+			{% endif %}
+		</div>
+	</main>
+
+	<script>
+		(function () {
+			const valorInput = document.getElementById('valor');
+			const taxaInput = document.getElementById('taxa_juros');
+
+			function maskBRL(value) {
+				const digits = value.replace(/\D/g, '');
+				if (!digits) return '';
+				const cents = (parseInt(digits, 10) / 100).toFixed(2);
+				const parts = cents.split('.');
+				parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+				return 'R$ ' + parts[0] + ',' + parts[1];
+			}
+
+			function maskDecimalBR(value) {
+				const cleaned = value.replace(/[^0-9,\.]/g, '');
+				return cleaned.replace(/\./g, ',');
+			}
+
+			if (valorInput) {
+				valorInput.addEventListener('input', function () {
+					valorInput.value = maskBRL(valorInput.value);
+				});
+			}
+
+			if (taxaInput) {
+				taxaInput.addEventListener('input', function () {
+					taxaInput.value = maskDecimalBR(taxaInput.value);
+				});
+			}
+		})();
+	</script>
+</body>
+</html>

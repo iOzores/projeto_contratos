@@ -21,9 +21,11 @@ class Contrato:
     cliente: str
     cliente_cpf: str
     valor: float
+    prazo_meses: int
     taxa_juros: float
     data_nascimento: str
     data: str
+    sistema_amortizacao: Optional[str] = None
 
 
 class DuplicateNumeroError(ValueError):
@@ -47,10 +49,8 @@ class ContratoDB:
         if not re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", table_name):
             raise ValueError("Nome de tabela inválido")
         self.table_name = table_name
+        self.parcelas_table_name = f"{table_name}_parcelas"
         self.connection_info = self._build_connection_info(db_path)
-        # DEBUG
-        import sys
-        print(f"DEBUG: connection_info = {self.connection_info}", file=sys.stderr)
         try:
             self.conn = pg.connect(**self.connection_info)
         except pg.DatabaseError as e:
@@ -65,8 +65,19 @@ class ContratoDB:
                     f"database={self.connection_info.get('database')} "
                     f"user={self.connection_info.get('user')}"
                 ) from e
+            if "timeout expired" in err_text.lower() or "connection refused" in err_text.lower():
+                raise RuntimeError(
+                    "Nao foi possivel conectar ao PostgreSQL. "
+                    "Verifique se o servico do banco esta em execucao e se o host/porta "
+                    "do .env estao corretos. Conexao atual: "
+                    f"host={self.connection_info.get('host')} "
+                    f"port={self.connection_info.get('port')} "
+                    f"database={self.connection_info.get('database')} "
+                    f"user={self.connection_info.get('user')}"
+                ) from e
             raise
         self._create_table()
+        self._create_parcelas_table()
         # ensure new columns exist when upgrading schema
         self._ensure_columns()
 
@@ -87,24 +98,15 @@ class ContratoDB:
         if db_path and db_path.startswith(("postgres://", "postgresql://")):
             return self._parse_url(db_path)
 
+        database_url = os.getenv("DATABASE_URL")
+        if database_url:
+            return self._parse_url(database_url)
+
         host = os.getenv("PGHOST", "localhost")
         port = os.getenv("PGPORT", "5432")
         dbname = os.getenv("PGDATABASE", "projeto_contratos")
         user = os.getenv("PGUSER", "postgres")
         password = os.getenv("PGPASSWORD", "postgres")
-
-        if any([host, port, dbname, user, password]):
-            return {
-                "host": host,
-                "port": int(port),
-                "database": dbname,
-                "user": user,
-                "password": password,
-            }
-
-        database_url = os.getenv("DATABASE_URL")
-        if database_url:
-            return self._parse_url(database_url)
 
         return {
             "host": host,
@@ -125,10 +127,34 @@ class ContratoDB:
                     cliente TEXT NOT NULL,
                     cliente_cpf TEXT NOT NULL,
                     valor DOUBLE PRECISION NOT NULL,
+                    prazo_meses INTEGER NOT NULL DEFAULT 12,
                     data DATE NOT NULL,
                     taxa_juros DOUBLE PRECISION NOT NULL DEFAULT 0.0,
                     data_nascimento DATE NULL,
+                    sistema_amortizacao TEXT NULL,
                     CHECK (numero ~ '^(\\d{{7,}}|\\d{{5,}}-\\d{{2}})$')
+                );
+                """
+            )
+        finally:
+            cur.close()
+        self.conn.commit()
+
+    def _create_parcelas_table(self) -> None:
+        cur = self.conn.cursor()
+        try:
+            cur.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {self.parcelas_table_name} (
+                    id SERIAL PRIMARY KEY,
+                    contrato_id INTEGER NOT NULL REFERENCES {self.table_name}(id) ON DELETE CASCADE,
+                    sistema_amortizacao TEXT NOT NULL,
+                    mes INTEGER NOT NULL,
+                    prestacao DOUBLE PRECISION NOT NULL,
+                    amortizacao DOUBLE PRECISION NOT NULL,
+                    juros DOUBLE PRECISION NOT NULL,
+                    saldo_devedor DOUBLE PRECISION NOT NULL,
+                    UNIQUE (contrato_id, sistema_amortizacao, mes)
                 );
                 """
             )
@@ -140,8 +166,10 @@ class ContratoDB:
         cur = self.conn.cursor()
         try:
             # safe alter: add columns if not exists (Postgres supports IF NOT EXISTS)
+            cur.execute(f"ALTER TABLE {self.table_name} ADD COLUMN IF NOT EXISTS prazo_meses INTEGER NOT NULL DEFAULT 12;")
             cur.execute(f"ALTER TABLE {self.table_name} ADD COLUMN IF NOT EXISTS taxa_juros DOUBLE PRECISION NOT NULL DEFAULT 0.0;")
             cur.execute(f"ALTER TABLE {self.table_name} ADD COLUMN IF NOT EXISTS data_nascimento DATE NULL;")
+            cur.execute(f"ALTER TABLE {self.table_name} ADD COLUMN IF NOT EXISTS sistema_amortizacao TEXT NULL;")
         finally:
             cur.close()
         self.conn.commit()
@@ -155,9 +183,11 @@ class ContratoDB:
             cliente=str(row.get("cliente", "")),
             cliente_cpf=str(row.get("cliente_cpf", "")),
             valor=float(row.get("valor", 0.0)),
+            prazo_meses=int(row.get("prazo_meses", 12) or 12),
             taxa_juros=float(row.get("taxa_juros", 0.0)),
             data_nascimento=str(row.get("data_nascimento", "")),
             data=str(row.get("data", "")),
+            sistema_amortizacao=row.get("sistema_amortizacao") or None,
         )
 
     def read_all(self) -> List[Contrato]:
@@ -165,7 +195,7 @@ class ContratoDB:
         try:
             cur.execute(
                 f"""
-                SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data
+                SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(prazo_meses,12) AS prazo_meses, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data, sistema_amortizacao
                 FROM {self.table_name}
                 ORDER BY id DESC
                 """
@@ -181,9 +211,11 @@ class ContratoDB:
                     "cliente": row[2],
                     "cliente_cpf": row[3],
                     "valor": row[4],
-                    "taxa_juros": row[5],
-                    "data_nascimento": row[6],
-                    "data": row[7],
+                    "prazo_meses": row[5],
+                    "taxa_juros": row[6],
+                    "data_nascimento": row[7],
+                    "data": row[8],
+                    "sistema_amortizacao": row[9],
                 }
             )
             for row in rows
@@ -194,7 +226,7 @@ class ContratoDB:
         try:
             cur.execute(
                 f"""
-                SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data
+                SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(prazo_meses,12) AS prazo_meses, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data, sistema_amortizacao
                 FROM {self.table_name}
                 WHERE id = %s
                 LIMIT 1
@@ -215,9 +247,11 @@ class ContratoDB:
                 "cliente": row[2],
                 "cliente_cpf": row[3],
                 "valor": row[4],
-                "taxa_juros": row[5],
-                "data_nascimento": row[6],
-                "data": row[7],
+                "prazo_meses": row[5],
+                "taxa_juros": row[6],
+                "data_nascimento": row[7],
+                "data": row[8],
+                "sistema_amortizacao": row[9],
             }
         )
 
@@ -283,7 +317,7 @@ class ContratoDB:
         try:
             final_query = (
                 f"""
-                    SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data
+                    SELECT id, numero, cliente, cliente_cpf, valor, COALESCE(prazo_meses,12) AS prazo_meses, COALESCE(taxa_juros,0.0) AS taxa_juros, TO_CHAR(data_nascimento, 'YYYY-MM-DD') AS data_nascimento, TO_CHAR(data, 'YYYY-MM-DD') AS data, sistema_amortizacao
                     FROM {self.table_name}
                     WHERE {where_clause}
                     ORDER BY id DESC
@@ -301,9 +335,11 @@ class ContratoDB:
                     "cliente": row[2],
                     "cliente_cpf": row[3],
                     "valor": row[4],
-                    "taxa_juros": row[5],
-                    "data_nascimento": row[6],
-                    "data": row[7],
+                    "prazo_meses": row[5],
+                    "taxa_juros": row[6],
+                    "data_nascimento": row[7],
+                    "data": row[8],
+                    "sistema_amortizacao": row[9],
                 }
             )
             for row in rows
@@ -316,8 +352,8 @@ class ContratoDB:
         try:
             cur.execute(
                 f"""
-                INSERT INTO {self.table_name} (numero, cliente, cliente_cpf, valor, taxa_juros, data_nascimento, data)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                INSERT INTO {self.table_name} (numero, cliente, cliente_cpf, valor, prazo_meses, taxa_juros, data_nascimento, data, sistema_amortizacao)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
                 """,
                 (
@@ -325,9 +361,11 @@ class ContratoDB:
                     contrato.cliente,
                     contrato.cliente_cpf,
                     float(contrato.valor),
+                    int(getattr(contrato, 'prazo_meses', 12) or 12),
                     float(getattr(contrato, 'taxa_juros', 0.0)),
                     getattr(contrato, 'data_nascimento', None),
                     contrato.data,
+                    getattr(contrato, 'sistema_amortizacao', None),
                 ),
             )
             row = cur.fetchone()
@@ -348,7 +386,7 @@ class ContratoDB:
     def update(self, contrato_id: int, **fields: Any) -> bool:
         if not fields:
             return False
-        allowed = {"numero", "cliente", "cliente_cpf", "valor", "data", "taxa_juros", "data_nascimento"}
+        allowed = {"numero", "cliente", "cliente_cpf", "valor", "prazo_meses", "data", "taxa_juros", "data_nascimento", "sistema_amortizacao"}
         updates: Dict[str, Any] = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return False
@@ -398,6 +436,38 @@ class ContratoDB:
             cur.close()
         self.conn.commit()
         return deleted
+
+    def replace_parcelas(self, contrato_id: int, sistema_amortizacao: str, parcelas: List[Dict[str, Any]]) -> None:
+        sistema = (sistema_amortizacao or "").strip().upper()
+        if sistema not in {"SAC", "PRICE"}:
+            raise ValueError("Sistema de amortizacao invalido")
+
+        cur = self.conn.cursor()
+        try:
+            cur.execute(f"DELETE FROM {self.parcelas_table_name} WHERE contrato_id = %s", (contrato_id,))
+            for parcela in parcelas:
+                cur.execute(
+                    f"""
+                    INSERT INTO {self.parcelas_table_name}
+                        (contrato_id, sistema_amortizacao, mes, prestacao, amortizacao, juros, saldo_devedor)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        contrato_id,
+                        sistema,
+                        int(parcela["mes"]),
+                        float(parcela["prestacao"]),
+                        float(parcela["amortizacao"]),
+                        float(parcela["juros"]),
+                        float(parcela["saldo_devedor"]),
+                    ),
+                )
+            self.conn.commit()
+        except Exception:
+            self.conn.rollback()
+            raise
+        finally:
+            cur.close()
 
     def close(self) -> None:
         try:

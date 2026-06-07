@@ -14,7 +14,7 @@ class IncluirContratoService:
         except Exception:
             return ""
 
-    def validar_entrada(self, cliente: str, cpf: str, valor: str, data: str, taxa_juros: str = None, data_nascimento: str = None):
+    def validar_entrada(self, cliente: str, cpf: str, valor: str, data: str, taxa_juros: str = None, data_nascimento: str = None, prazo_meses: str = None, sistema_amortizacao: str = None):
         errors = []
 
         try:
@@ -47,6 +47,21 @@ class IncluirContratoService:
         if data_nascimento is not None and (str(data_nascimento).strip() != ""):
             data_nasc_val = data_nascimento.strip()
 
+        prazo_val = 12
+        if prazo_meses is not None and (str(prazo_meses).strip() != ""):
+            try:
+                prazo_val = int(str(prazo_meses).strip())
+                if prazo_val <= 0:
+                    raise ValueError()
+            except Exception:
+                errors.append("Prazo do contrato inválido")
+                prazo_val = 12
+
+        sistema_val = (sistema_amortizacao or "").strip().upper()
+        if sistema_val and sistema_val not in {"SAC", "PRICE"}:
+            errors.append("Sistema de amortização inválido")
+            sistema_val = ""
+
         payload = {
             "cliente": cliente_limpo,
             "cliente_cpf": cpf_digits,
@@ -54,6 +69,8 @@ class IncluirContratoService:
             "data": data_limpa,
             "taxa_juros": taxa_f,
             "data_nascimento": data_nasc_val,
+            "prazo_meses": prazo_val,
+            "sistema_amortizacao": sistema_val or None,
         }
         return errors, payload
 
@@ -82,14 +99,16 @@ class IncluirContratoService:
                 cliente=payload["cliente"],
                 cliente_cpf=payload["cliente_cpf"],
                 valor=payload["valor"] or 0.0,
+                prazo_meses=payload.get("prazo_meses", 12) or 12,
                 taxa_juros=payload.get("taxa_juros", 0.0) or 0.0,
                 data_nascimento=payload.get("data_nascimento"),
                 data=payload["data"],
+                sistema_amortizacao=payload.get("sistema_amortizacao"),
             )
 
             try:
-                self.db.insert(contrato)
-                return True, None
+                contrato_id = self.db.insert(contrato)
+                return True, None, contrato_id
             except DuplicateNumeroError as e:
                 last_err = e
                 continue
@@ -100,4 +119,4 @@ class IncluirContratoService:
                 last_err = e
                 break
 
-        return False, last_err
+        return False, last_err, None

@@ -35,6 +35,8 @@
 		tr:hover{background:rgba(255,255,255,0.01)}
 		.actions{white-space:nowrap}
 		.actions a, .actions button{display:inline-block;padding:6px 10px;margin-right:8px;font-size:12px;border-radius:4px;border:none;cursor:pointer;background:none}
+		.simulate-link{color:rgba(59,130,246,0.9);text-decoration:none}
+		.simulate-link:hover{color:#60a5fa}
 		.edit-link{color:rgba(212,175,55,0.8);text-decoration:none}
 		.edit-link:hover{color:var(--gold)}
 		.delete-btn{color:rgba(239,68,68,0.8)}
@@ -86,6 +88,8 @@
 								<th>Cliente</th>
 								<th>CPF</th>
 								<th>Número</th>
+								<th>Prazo</th>
+								<th>Sistema</th>
 								<th>Taxa Juros</th>
 								<th>Data Nasc.</th>
 								<th>Valor</th>
@@ -99,11 +103,14 @@
 								<td>{{ c.cliente or c.nome or '-' }}</td>
 								<td>{{ (c.cpf or c.cliente_cpf or '-')|cpf }}</td>
 								<td>{{ c.numero }}</td>
+								<td>{{ (c.prazo_meses if c.prazo_meses is not none else 12) }} meses</td>
+								<td>{{ c.sistema_amortizacao or '-' }}</td>
 								<td>{{ (c.taxa_juros if c.taxa_juros is not none else 0)|decimal_br }}%</td>
 								<td>{{ (c.data_nascimento or '-')|date_br }}</td>
 								<td>{{ (c.valor if c.valor is not none else '-')|currency }}</td>
 								<td>{{ (c.data or '-')|date_br }}</td>
 								<td class="actions">
+									<a class="simulate-link" href="/simular/{{ c.id }}">Simular</a>
 									<a class="edit-link" href="/editar/{{ c.id }}">Editar</a>
 									<form action="/excluir/{{ c.id }}" method="post" style="display:inline" onsubmit="return confirm('Tem certeza que deseja excluir este contrato?')">
 										<input type="hidden" name="q" value="{{ request.args.get('q','') }}">

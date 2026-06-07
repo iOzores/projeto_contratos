@@ -51,7 +51,7 @@
 			{% endwith %}
 
 			<h1>Editar Contrato</h1>
-			<div class="subtitle">O número do contrato é fixo. Você pode alterar cliente, CPF, valor e data.</div>
+			<div class="subtitle">O número do contrato é fixo. Você pode alterar cliente, CPF, valor, prazo e data.</div>
 
 			<form action="/editar/{{ contrato.id }}" method="POST">
 				<div>
@@ -74,6 +74,18 @@
 					<label>Valor (R$)</label>
 					<input type="text" id="valor" name="valor" value="{{ contrato.valor|currency }}" required placeholder="R$ 0,00" inputmode="decimal" autocomplete="off">
 				</div>
+
+				<div>
+					<label>Prazo do Contrato (meses)</label>
+					<input type="number" name="prazo_meses" value="{{ contrato.prazo_meses }}" min="1" step="1" required>
+				</div>
+
+				{% if contrato.sistema_amortizacao %}
+				<div>
+					<label>Sistema de Amortização</label>
+					<input type="text" value="{{ contrato.sistema_amortizacao }}" disabled>
+				</div>
+				{% endif %}
 
 				<div>
 					<label>Data de Assinatura</label>

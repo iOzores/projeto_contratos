@@ -1,7 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<!DOCTYPE html>
-<html lang="pt-BR">
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
@@ -31,6 +29,9 @@
 		.cta{padding:12px 18px;border-radius:10px;font-weight:700;text-decoration:none}
 		.cta.primary{background:var(--gold);color:#000}
 		.cta.secondary{background:transparent;border:1px solid rgba(255,255,255,0.08);color:#fff}
+		.cta.simulate{display:inline-flex;align-items:center;gap:10px;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.35);color:#fff}
+		.cta.simulate:hover{background:rgba(212,175,55,0.16);border-color:var(--gold)}
+		.cta.simulate svg{width:18px;height:18px;fill:currentColor}
 		/* Right panel */
 		.hero-right{width:360px;padding:22px;border-radius:12px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border:1px solid rgba(255,255,255,0.03)}
 		.panel-title{font-weight:700;color:var(--gold);margin-bottom:10px}
@@ -63,6 +64,10 @@
 				<div class="cta-row">
 					<a class="cta primary" href="/incluir">Faça seu Contrato Conosco</a>
 					<a class="cta secondary" href="/consultar">Contratos e Investimentos</a>
+					<a class="cta simulate" href="/simular" title="Simular empréstimo">
+						<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3a8 8 0 1 0 4.9 14.33l4.39 4.38 1.42-1.42-4.38-4.39A8 8 0 0 0 11 3zm0 2a6 6 0 1 1 0 12 6 6 0 0 1 0-12zm-1 3v2H8v2h2v4h2v-4h2v-2h-2V8z"/></svg>
+						Simular Empréstimo
+					</a>
 				</div>
 			</div>
 			<aside class="hero-right">

@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="pt-br">
 <head>
         <meta charset="UTF-8">
@@ -20,7 +19,6 @@
             .btn.primary{background:var(--gold);color:#000;border:none}
             .flash{margin-bottom:12px;padding:10px;border-radius:8px}
         </style>
-        <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
 <body>
     <header class="topbar">
@@ -61,12 +59,25 @@
 
                 <div style="margin-bottom:12px">
                     <label>Valor (R$)</label>
-                    <input type="text" id="valor" name="valor" required placeholder="R$ 0,00" inputmode="decimal" autocomplete="off">
+                    <input type="text" id="valor" name="valor" value="{{ valor_form|default('') }}" required placeholder="R$ 0,00" inputmode="decimal" autocomplete="off">
                 </div>
 
                 <div style="margin-bottom:12px">
+                    <label>Prazo do Contrato (meses)</label>
+                    <input type="number" name="prazo_meses" min="1" step="1" value="{{ prazo_meses_form|default('12') }}" required>
+                </div>
+
+                {% if sistema_amortizacao_form %}
+                <div style="margin-bottom:12px">
+                    <label>Sistema de Amortização</label>
+                    <input type="text" value="{{ sistema_amortizacao_form }}" disabled>
+                    <input type="hidden" name="sistema_amortizacao" value="{{ sistema_amortizacao_form }}">
+                </div>
+                {% endif %}
+
+                <div style="margin-bottom:12px">
                     <label>Taxa de Juros (%)</label>
-                    <input type="text" id="taxa" name="taxa_juros" placeholder="0,00" inputmode="decimal" autocomplete="off">
+                    <input type="text" id="taxa" name="taxa_juros" value="{{ taxa_juros_form|default('') }}" placeholder="0,00" inputmode="decimal" autocomplete="off">
                     <div class="hint">Informe a taxa em percentual (ex.: 1,50)</div>
                 </div>
 

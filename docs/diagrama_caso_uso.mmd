@@ -1,0 +1,45 @@
+flowchart LR
+    Usuario["Usuario / Operador"]
+    Banco[("PostgreSQL")]
+
+    subgraph Sistema["Sistema OzzBank - Contratos Bancarios"]
+        UC01(["Acessar pagina inicial"])
+        UC02(["Consultar contratos"])
+        UC03(["Buscar por nome, CPF ou numero"])
+        UC04(["Incluir contrato"])
+        UC05(["Gerar numero de contrato"])
+        UC06(["Validar dados do contrato"])
+        UC07(["Editar contrato"])
+        UC08(["Excluir contrato"])
+        UC09(["Simular emprestimo"])
+        UC10(["Calcular parcelas SAC"])
+        UC11(["Calcular parcelas PRICE"])
+        UC12(["Contratar a partir da simulacao"])
+        UC13(["Salvar parcelas do contrato"])
+        UC14(["Exportar contratos em CSV"])
+    end
+
+    Usuario --> UC01
+    Usuario --> UC02
+    Usuario --> UC04
+    Usuario --> UC07
+    Usuario --> UC08
+    Usuario --> UC09
+    Usuario --> UC14
+
+    UC02 -. inclui .-> UC03
+    UC04 -. inclui .-> UC05
+    UC04 -. inclui .-> UC06
+    UC09 -. inclui .-> UC10
+    UC09 -. inclui .-> UC11
+    UC12 -. estende .-> UC09
+    UC12 -. inclui .-> UC04
+    UC12 -. inclui .-> UC13
+    UC14 -. usa filtro de .-> UC02
+
+    UC02 --> Banco
+    UC04 --> Banco
+    UC07 --> Banco
+    UC08 --> Banco
+    UC13 --> Banco
+    UC14 --> Banco

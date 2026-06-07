@@ -8,7 +8,7 @@ class EditarContratoService:
     def __init__(self, db=None):
         self.db = db or ContratoDB()
 
-    def preparar_updates(self, numero=None, cliente=None, cpf=None, valor=None, data=None, taxa_juros=None, data_nascimento=None):
+    def preparar_updates(self, numero=None, cliente=None, cpf=None, valor=None, data=None, taxa_juros=None, data_nascimento=None, prazo_meses=None):
         updates = {}
 
         if numero is not None and numero != "":
@@ -34,6 +34,14 @@ class EditarContratoService:
                 return None, "Taxa de juros inválida"
         if data_nascimento is not None and data_nascimento != "":
             updates["data_nascimento"] = data_nascimento
+        if prazo_meses is not None and prazo_meses != "":
+            try:
+                prazo_val = int(str(prazo_meses).strip())
+                if prazo_val <= 0:
+                    raise ValueError()
+                updates["prazo_meses"] = prazo_val
+            except Exception:
+                return None, "Prazo do contrato inválido"
 
         return updates, None
 

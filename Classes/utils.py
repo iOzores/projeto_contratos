@@ -9,7 +9,15 @@ def parse_money_br(value):
         raise ValueError("Valor inválido")
 
     s = s.replace("R$", "").replace("r$", "").replace(" ", "")
-    s = s.replace(".", "").replace(",", ".")
+    if "," in s and "." in s:
+        if s.rfind(",") > s.rfind("."):
+            s = s.replace(".", "").replace(",", ".")
+        else:
+            s = s.replace(",", "")
+    elif "," in s:
+        s = s.replace(".", "").replace(",", ".")
+    else:
+        s = s.replace(",", ".")
     return float(s)
 
 
